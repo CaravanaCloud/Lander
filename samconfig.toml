@@ -1,0 +1,10 @@
+version = 0.1
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "lander"
+s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-11rww5kli3wdh"
+s3_prefix = "lander"
+region = "eu-west-1"
+capabilities = "CAPABILITY_IAM"
+

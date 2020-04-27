@@ -1,0 +1,71 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Redirect HTTP requests
+
+Parameters:
+  StageName:
+    Type: String
+    Default: "lander_stage"
+
+Globals:
+  Function:
+    Timeout: 15
+
+Resources:
+  FnRedirect:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: lander/
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref TblRedirects
+      Environment:
+        Variables:
+          TBL_REDIRECTS: !Ref TblRedirects
+      Events:
+        RedirRoot:
+          Type: Api
+          Properties:
+            Path: "/"
+            Method: any
+            RestApiId: !Ref LanderApi
+        RedirOthers:
+          Type: Api
+          Properties:
+            Path: "/{proxy+}"
+            Method: any
+            RestApiId: !Ref LanderApi
+
+  TblRedirects:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: "Retain"
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: "host"
+          AttributeType: "S"
+        - AttributeName: "path"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "host"
+          KeyType: "HASH"
+        - AttributeName: "path"
+          KeyType: "RANGE"
+      BillingMode: "PAY_PER_REQUEST"
+
+  LanderApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref StageName
+
+Outputs:
+  FnRedirectApi:
+    Description: "API Gateway endpoint URL for Prod stage for Hello World function"
+    Value: !Sub "https://${LanderApi}.execute-api.${AWS::Region}.amazonaws.com/${StageName}/"
+  FnRedirectFunction:
+    Description: "Hello World Lambda Function ARN"
+    Value: !GetAtt FnRedirect.Arn
+  FnRedirectIamRole:
+    Description: "Implicit IAM Role created for Hello World function"
+    Value: !GetAtt FnRedirectRole.Arn
